@@ -11,6 +11,8 @@ import java.util.List;
 @Repository
 public interface WorkbenchUsageRepository extends JpaRepository<WorkbenchUsage, Long> {
 
+    //TODO - this can also be handled when a new workbench instance is created, we directly prevent the user 
+    //from creating.
     @Query(value = "SELECT wu.user_id " +
                    "FROM workbench_usage wu " +
                    "JOIN \"user\" u ON u.id = wu.user_id " +

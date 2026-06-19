@@ -14,6 +14,7 @@ public class RoleLimit {
     @JoinColumn(name = "role_id")
     private Role role;
     
+    //TODO: this is confusing for a single role there will be multiple limits.
     @ManyToOne
     @JoinColumn(name = "limit_type_id")
     private AdministrativeLimit administrativeLimit;

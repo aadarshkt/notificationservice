@@ -9,6 +9,8 @@ import java.util.List;
 public class MaxConcurrentRuleEvaluator implements RuleEvaluator {
 
     // Assumption: Limit ID for MAX_CONCURRENT is 1 in the administrative_limit table.
+    //TODO can we make something like dynamically/only required applying certains rules on a particular role-limit.
+    //there can be some .apply method in role-limit and therefore application of rulesEvaluation on that role-limit.
     private static final Long MAX_CONCURRENT_LIMIT_ID = 1L;
     
     private final WorkbenchUsageRepository workbenchUsageRepository;

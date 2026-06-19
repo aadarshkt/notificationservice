@@ -13,10 +13,12 @@ public class RuleEngineService {
 
     private final RuleEvaluatorFactory ruleEvaluatorFactory;
     private final RoleLimitRepository roleLimitRepository;
+    private final org.aadarshkt.notificationservice.queue.NotificationQueueService notificationQueueService;
 
-    public RuleEngineService(RuleEvaluatorFactory ruleEvaluatorFactory, RoleLimitRepository roleLimitRepository) {
+    public RuleEngineService(RuleEvaluatorFactory ruleEvaluatorFactory, RoleLimitRepository roleLimitRepository, org.aadarshkt.notificationservice.queue.NotificationQueueService notificationQueueService) {
         this.ruleEvaluatorFactory = ruleEvaluatorFactory;
         this.roleLimitRepository = roleLimitRepository;
+        this.notificationQueueService = notificationQueueService;
     }
 
     /**
@@ -39,8 +41,7 @@ public class RuleEngineService {
                             roleLimit.getAdministrativeLimit().getLimitType(), 
                             roleLimit.getRole().getRoleName());
                     
-                    // PLACEHOLDER: Enqueue the users to NotificationQueue 
-                    // e.g., notificationQueueService.push(userIdsExceedingLimit, roleLimit);
+                    notificationQueueService.push(userIdsExceedingLimit, roleLimit);
                 }
             } catch (Exception e) {
                 log.error("Failed to evaluate rule for RoleLimit ID: {}", roleLimit.getId(), e);

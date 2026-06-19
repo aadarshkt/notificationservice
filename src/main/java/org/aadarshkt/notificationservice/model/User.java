@@ -12,6 +12,12 @@ public class User {
     
     private String username;
     
+    @Column(name = "email_id")
+    private String emailId;
+    
+    @Column(name = "phone_number")
+    private String phoneNumber;
+    
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
