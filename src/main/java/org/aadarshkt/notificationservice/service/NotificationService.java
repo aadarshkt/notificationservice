@@ -1,5 +1,8 @@
 package org.aadarshkt.notificationservice.service;
 
+import com.google.firebase.messaging.FirebaseMessaging;
+import com.google.firebase.messaging.Message;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aadarshkt.notificationservice.config.RabbitMQConfig;
 import org.aadarshkt.notificationservice.dto.NotificationEvent;
@@ -8,7 +11,10 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
+
+    private final SseService sseService;
 
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME, concurrency = "3-10")
     public void processNotification(NotificationEvent event) {
@@ -46,8 +52,33 @@ public class NotificationService {
     }
 
     private void sendProductNotification(NotificationEvent event) {
-        // PLACEHOLDER: Implementation for sending In-App / Product Notification
-        // e.g., saving to a notifications table or pushing via WebSockets/FCM
-        log.debug("Placeholder: Sending IN-APP notification to User {}", event.getUserId());
+        // Attempt to send via SSE first (if user is actively connected)
+        boolean isSseSent = sseService.sendEventToUser(event.getUserId(), event);
+        
+        if (isSseSent) {
+            log.debug("Successfully sent IN-APP notification to User {} via SSE", event.getUserId());
+        } else {
+            // Fallback to FCM if the user is not actively connected via SSE
+            log.debug("User {} is not connected via SSE. Falling back to FCM.", event.getUserId());
+            sendFcmNotification(event);
+        }
+    }
+
+    private void sendFcmNotification(NotificationEvent event) {
+        try {
+            // PLACEHOLDER: Fetch actual FCM token for the user from a database
+            String dummyFcmToken = "dummy-fcm-token-for-" + event.getUserId();
+            
+            Message message = Message.builder()
+                .putData("userId", event.getUserId() != null ? event.getUserId() : "")
+                .putData("limitType", event.getLimitType() != null ? event.getLimitType() : "UNKNOWN")
+                .setToken(dummyFcmToken)
+                .build();
+                
+            FirebaseMessaging.getInstance().send(message);
+            log.debug("Successfully sent FCM notification to User {}", event.getUserId());
+        } catch (Exception e) {
+            log.error("Failed to send FCM notification for user {}: {}", event.getUserId(), e.getMessage());
+        }
     }
 }
