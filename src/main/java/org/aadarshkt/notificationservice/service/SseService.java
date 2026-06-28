@@ -7,15 +7,19 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.aadarshkt.notificationservice.dto.NotificationEvent;
 
 @Slf4j
 @Service
+//SRP -> manage emitters and notfication firing.
+//emitter -> object of open tcp socket with user
 public class SseService {
 
     // TODO: Think how would multiple instances of notification service would send sse events.
     // Currently this is an in-memory map which works for a single instance.
     private final Map<String, SseEmitter> activeEmitters = new ConcurrentHashMap<>();
 
+    //create emitter object for a single userId
     public SseEmitter createEmitter(String userId) {
         // Set timeout to 0 (no timeout) or a high value
         SseEmitter emitter = new SseEmitter(0L);
@@ -40,11 +44,12 @@ public class SseService {
         return emitter;
     }
 
-    public boolean sendEventToUser(String userId, Object payload) {
+    public boolean sendEventToUser(NotificationEvent event) {
+        String userId = event.getUserId();
         SseEmitter emitter = activeEmitters.get(userId);
         if (emitter != null) {
             try {
-                emitter.send(SseEmitter.event().data(payload));
+                emitter.send(SseEmitter.event().data(event));
                 return true;
             } catch (IOException e) {
                 log.error("Error sending SSE to user: {}", userId, e);

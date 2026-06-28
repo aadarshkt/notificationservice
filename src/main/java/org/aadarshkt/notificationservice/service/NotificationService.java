@@ -1,7 +1,6 @@
 package org.aadarshkt.notificationservice.service;
 
-import com.google.firebase.messaging.FirebaseMessaging;
-import com.google.firebase.messaging.Message;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aadarshkt.notificationservice.config.RabbitMQConfig;
@@ -12,14 +11,29 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+//SRP -> To consume notification event and route them to correct handlers.
 public class NotificationService {
 
     private final SseService sseService;
+    private final FcmService fcmService;
+    private final TemplateResolverService templateResolverService;
 
+    //Consume notification event and route them to handlers.
     @RabbitListener(queues = RabbitMQConfig.QUEUE_NAME, concurrency = "3-10")
     public void processNotification(NotificationEvent event) {
-        log.info("Received notification event for User: {}, Limit: {}, Timestamp: {}", 
-                event.getUserId(), event.getLimitType(), event.getTimestamp());
+        log.info("Received notification event for User: {}, EventType: {}, Timestamp: {}", 
+                event.getUserId(), event.getEventType(), event.getTimestamp());
+
+        // Use template engine to resolve the message body if templateData is present
+        String resolvedMessage = "";
+        if (event.getEventType() != null && event.getTemplateData() != null) {
+            resolvedMessage = templateResolverService.resolveTemplate(event.getEventType(), event.getTemplateData());
+            log.info("Resolved Message from Template: {}", resolvedMessage);
+            // TODO: Pass `resolvedMessage` down to SSE, FCM, and Email services
+        } else {
+            // Legacy handling or missing template data
+            log.warn("Event type or template data is missing. Using fallback logic.");
+        }
 
         // PLACEHOLDER: Generalized Notification Firing Logic
         // In the future, this can be extended to handle various notification channels.
@@ -42,6 +56,9 @@ public class NotificationService {
     private void sendEmailNotification(NotificationEvent event) {
         // PLACEHOLDER: Implementation for sending Email
         // e.g., using JavaMailSender or an external API like SendGrid
+        // TODO (Future): Implement Retries and DLQ (Dead Letter Queue) here if email fails
+        // try { sendEmail(); } catch (Exception e) { throw new AmqpRejectAndDontRequeueException(e); } 
+        // to route to DLQ instead of infinite requeue.
         log.debug("Placeholder: Sending EMAIL to {}", event.getEmailId());
     }
 
@@ -51,34 +68,17 @@ public class NotificationService {
         log.debug("Placeholder: Sending SMS to {}", event.getPhoneNumber());
     }
 
+    
     private void sendProductNotification(NotificationEvent event) {
         // Attempt to send via SSE first (if user is actively connected)
-        boolean isSseSent = sseService.sendEventToUser(event.getUserId(), event);
+        boolean isSseSent = sseService.sendEventToUser(event);
         
         if (isSseSent) {
             log.debug("Successfully sent IN-APP notification to User {} via SSE", event.getUserId());
         } else {
             // Fallback to FCM if the user is not actively connected via SSE
             log.debug("User {} is not connected via SSE. Falling back to FCM.", event.getUserId());
-            sendFcmNotification(event);
-        }
-    }
-
-    private void sendFcmNotification(NotificationEvent event) {
-        try {
-            // PLACEHOLDER: Fetch actual FCM token for the user from a database
-            String dummyFcmToken = "dummy-fcm-token-for-" + event.getUserId();
-            
-            Message message = Message.builder()
-                .putData("userId", event.getUserId() != null ? event.getUserId() : "")
-                .putData("limitType", event.getLimitType() != null ? event.getLimitType() : "UNKNOWN")
-                .setToken(dummyFcmToken)
-                .build();
-                
-            FirebaseMessaging.getInstance().send(message);
-            log.debug("Successfully sent FCM notification to User {}", event.getUserId());
-        } catch (Exception e) {
-            log.error("Failed to send FCM notification for user {}: {}", event.getUserId(), e.getMessage());
+            fcmService.sendNotification(event);
         }
     }
 }

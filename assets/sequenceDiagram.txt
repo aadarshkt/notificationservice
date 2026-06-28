@@ -1,0 +1,35 @@
+Title: Notification Service
+
+Participants:
+- Administrative Limits DB
+- RuleEngine
+- Usage Limits
+- NotificationQueue
+- NotificationService
+- Client
+
+Messages:
+Administrative Limits DB -> RuleEngine: get configured limits(polling)
+Usage Limits -> RuleEngine: get current usage(polling)
+RuleEngine -> NotificationQueue: add notification payload when limit is breached
+NotificationService -> NotificationQueue: consume
+NotificationService -> Client: fire notification
+
+---
+Mermaid Diagram Representation:
+
+```mermaid
+sequenceDiagram
+    participant AL as Administrative Limits DB
+    participant RE as RuleEngine
+    participant UL as Usage Limits
+    participant NQ as NotificationQueue
+    participant NS as NotificationService
+    participant C as Client
+
+    AL->>RE: get configured limits(polling)
+    UL->>RE: get current usage(polling)
+    RE->>NQ: add notification payload when limit is breached
+    NS->>NQ: consume
+    NS->>C: fire notification
+```

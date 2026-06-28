@@ -6,24 +6,38 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Table(name = "notification_log")
 public class NotificationLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne
-    @JoinColumn(name = "receiver_user_id")
-    private User receiverUser;
+    @Column(name = "user_id", nullable = false)
+    private String userId; // Generic user identifier (e.g. from any service)
     
-    @ManyToOne
-    @JoinColumn(name = "workbench_id")
-    private Workbench workbench;
+    @Column(name = "event_type", nullable = false)
+    private String eventType; // Matches the NotificationTemplate eventType
     
-    private String instanceId;
+    @Column(name = "source_service")
+    private String sourceService; // e.g., "booking-service", "auth-service"
     
-    @ManyToOne
-    @JoinColumn(name = "limit_id")
-    private AdministrativeLimit administrativeLimit;
+    @Column(name = "channel")
+    private String channel; // e.g., "EMAIL", "SMS", "IN_APP"
     
+    @Column(name = "status")
+    private String status; // e.g., "SUCCESS", "FAILED"
+    
+    @Column(name = "recipient_contact")
+    private String recipientContact; // Email ID, Phone number, or FCM token used
+    
+    @Column(name = "resolved_message", columnDefinition = "TEXT")
+    private String resolvedMessage; // The actual generated message content
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

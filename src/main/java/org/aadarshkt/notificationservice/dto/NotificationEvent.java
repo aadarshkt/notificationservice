@@ -15,10 +15,11 @@ public class NotificationEvent {
     private String userId;
     private String emailId;
     private String phoneNumber;
-    private Long roleLimitId;
-    private String limitType;
-    private String limitDescription;
-    private String limitValue;
-    private String roleName;
+    
+    // Generic Envelope Fields
+    private String eventType;
+    private String sourceService;
+    private java.util.Map<String, Object> templateData;
+    
     private LocalDateTime timestamp;
 }
